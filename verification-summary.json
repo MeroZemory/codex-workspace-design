@@ -1,0 +1,36 @@
+{
+  "checks": {
+    "nine_clones": true,
+    "all_clones_clean": true,
+    "active_idle_observed": true,
+    "approval_observed": true,
+    "input_observed": true,
+    "observer_did_not_receive_requests": true,
+    "two_active_after_reconnect": true,
+    "results_completed_interrupted": true,
+    "lightweight_turn_reads": true,
+    "failure_observed": true,
+    "footnotes_complete": true,
+    "pinned_source_paths_exist": true,
+    "local_artifacts_exist": true,
+    "no_encoding_replacement": true
+  },
+  "all_pass": true,
+  "pinned_code_links_checked": 36,
+  "footnote_count": 24,
+  "bad_source_links": [],
+  "limits": [
+    "No terminal GUI integration test",
+    "No real OpenCodex account inference",
+    "No long-duration performance benchmark",
+    "Source code of cloned repositories unchanged"
+  ],
+  "experiments": [
+    "probe-7h7_rnf1",
+    "probe-approval-k7jus_lt",
+    "probe-concurrent-1lygr01j",
+    "probe-reconnect-jnf1sfom"
+  ],
+  "report_sha256": "1fc2578a366d691df3d46b42a395d3ac25e039215e2f6414919d561cc99c4075",
+  "report_bytes": 38411
+}

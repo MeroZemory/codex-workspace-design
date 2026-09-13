@@ -1,0 +1,74 @@
+[
+  {
+    "name": "codex",
+    "commit": "c4017a87aacc7558002b7cb510025e967c1d765e",
+    "commitDate": "2026-09-12T05:04:11+00:00",
+    "remote": "https://github.com/openai/codex.git",
+    "dirtyFiles": 0,
+    "shallow": "true"
+  },
+  {
+    "name": "wmux",
+    "commit": "a185d26d6dd8de3060ae9139694f6a63c73b4812",
+    "commitDate": "2026-09-12T03:21:50+02:00",
+    "remote": "https://github.com/amirlehmam/wmux.git",
+    "dirtyFiles": 0,
+    "shallow": "true"
+  },
+  {
+    "name": "intelligent-terminal",
+    "commit": "1e66cf55bf8bc6489b36f937dc9adc5a528ddb69",
+    "commitDate": "2026-09-11T18:31:39+08:00",
+    "remote": "https://github.com/microsoft/intelligent-terminal.git",
+    "dirtyFiles": 0,
+    "shallow": "true"
+  },
+  {
+    "name": "agent-terminal",
+    "commit": "78d16febc3117c91264259196cb7b8d2fded4ca2",
+    "commitDate": "2026-09-03T11:09:24+05:30",
+    "remote": "https://github.com/DaniAkash/agent-terminal.git",
+    "dirtyFiles": 0,
+    "shallow": "true"
+  },
+  {
+    "name": "trafficlight4ai",
+    "commit": "c9e45588f7374a2b61fdbd8c9b4bd9926277140c",
+    "commitDate": "2026-06-25T09:57:14+09:00",
+    "remote": "https://github.com/yhz61010/trafficlight4ai.git",
+    "dirtyFiles": 0,
+    "shallow": "true"
+  },
+  {
+    "name": "waveterm",
+    "commit": "a4447c1563b2df285ab89e76c82f91e1a1a49c1e",
+    "commitDate": "2026-07-29T11:05:03-07:00",
+    "remote": "https://github.com/wavetermdev/waveterm.git",
+    "dirtyFiles": 0,
+    "shallow": "true"
+  },
+  {
+    "name": "herdr",
+    "commit": "9ad65d9031e8cb16a7b553c0e6f74809e9811e92",
+    "commitDate": "2026-09-12T01:38:57+04:00",
+    "remote": "https://github.com/herdrdev/herdr.git",
+    "dirtyFiles": 0,
+    "shallow": "true"
+  },
+  {
+    "name": "codex-monitor-hud",
+    "commit": "df1d5b9e3d4b701de979b5c84a006db7cca5112f",
+    "commitDate": "2026-09-05T03:46:26+08:00",
+    "remote": "https://github.com/LH-03/codex-monitor-hud.git",
+    "dirtyFiles": 0,
+    "shallow": "true"
+  },
+  {
+    "name": "opencodex",
+    "commit": "c155cc7923dbc0102e27d79185505a85d4357b2c",
+    "commitDate": "2026-09-11T20:17:49+09:00",
+    "remote": "https://github.com/lidge-jun/opencodex.git",
+    "dirtyFiles": 0,
+    "shallow": "true"
+  }
+]

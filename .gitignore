@@ -1,0 +1,17 @@
+# Track reviewed research and design artifacts only.
+/*
+!/.gitignore
+!/README.md
+!/*.md
+!/*.json
+!/*.mmd
+!/config-auth-verification/
+/config-auth-verification/*
+!/config-auth-verification/verification.json
+!/config-auth-verification/schema/
+/config-auth-verification/schema/*
+!/config-auth-verification/schema/ChatgptAuthTokensRefreshParams.json
+!/config-auth-verification/schema/ChatgptAuthTokensRefreshResponse.json
+!/config-auth-verification/schema/v2/
+/config-auth-verification/schema/v2/*
+!/config-auth-verification/schema/v2/LoginAccountParams.json
