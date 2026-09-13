@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-09-13T10:53:46.5976991+09:00",
+  "checks": {
+    "documentLinksValid": true,
+    "embeddedAndStandaloneDiagramMatch": true,
+    "singleUserRuntime": true,
+    "updateAdmissionLock": true,
+    "tokenUncertaintyHandled": true,
+    "runtimeOwnsTerminalState": true,
+    "implementationGates": true,
+    "noUtf8Replacement": true
+  },
+  "mermaidRender": "not_run_successfully: mmdc unavailable; editable source retained",
+  "runtimeTestsRun": false,
+  "packageUpdateTestsRun": false,
+  "independentReview": "r2 PASS: architecture adoption and G1 minimal experiment only; no implementation or release validation",
+  "documentSha256": "86E67E0CE8F54E087AE71D357E7977198A839D513061123DC71A25ACBAA3E968"
+}

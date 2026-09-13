@@ -1,0 +1,20 @@
+flowchart LR
+  UI["화면 앱: 작업 탭과 터미널 패널"]
+  subgraph BG["사용자 권한 백그라운드 런타임"]
+    CTRL["세션 소유권과 명령 처리"]
+    TERM["PTY와 Codex 연결 어댑터"]
+    AUTH["계정 갱신과 요청 라우팅"]
+    STATE["상태 수집과 usage 전망"]
+    CTRL --> TERM
+    CTRL --> AUTH
+    TERM --> STATE
+    AUTH --> STATE
+  end
+  UI <-->|"인증된 로컬 IPC"| CTRL
+  STATE -->|"상태 스냅샷과 변경 이벤트"| UI
+  TERM <-->|"입력과 출력"| CLI["기존 Codex CLI: 실제 세션별 실행"]
+  CLI -->|"세션에 바인딩된 모델 요청"| AUTH
+  AUTH <-->|"계정 인증과 usage 조회"| API["외부 서비스"]
+  ENV["공통 사용자 환경과 프로젝트 설정"] --> CLI
+  CTRL --> DB["앱 상태 저장소"]
+  AUTH --> VAULT["OS 보호 자격증명 저장소"]
