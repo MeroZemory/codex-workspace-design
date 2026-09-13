@@ -1,0 +1,15 @@
+{
+  "checkedAt": "2026-09-13T07:39:35.3474047+09:00",
+  "repository": "https://github.com/openai/codex.git",
+  "fetchedMain": "b979d4f1f04538ba5a5fcc434d499c007bfe1b8c",
+  "analyzedCommit": "6b9826e3aa83b1a5947db50f4332cb9c65f1b340",
+  "tag": "rust-v0.154.0",
+  "installedVersion": "codex-cli 0.154.0",
+  "cloneClean": true,
+  "externalAuthInInstalledSchema": true,
+  "externalAuthDescription": "[UNSTABLE] FOR OPENAI INTERNAL USE ONLY - DO NOT USE. The access token must contain the same scopes that Codex-managed ChatGPT auth tokens have.",
+  "brokenDocumentLinks": [],
+  "realAccountTestsRun": false,
+  "rustTestsRun": false,
+  "note": "Historical tag SHA differs from this fetch; binary version string does not establish build commit identity."
+}

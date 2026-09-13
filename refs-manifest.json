@@ -1,0 +1,18 @@
+[
+  {
+    "name": "codex",
+    "path": "refs\\codex",
+    "remote": "https://github.com/openai/codex.git",
+    "commit": "6b9826e3aa83b1a5947db50f4332cb9c65f1b340",
+    "shallow": "true",
+    "purpose": "Read-only reference checkout; excluded from parent Git repository"
+  },
+  {
+    "name": "orca",
+    "path": "refs\\orca",
+    "remote": "https://github.com/stablyai/orca.git",
+    "commit": "56fcb544e0574ee38c53b9e09bee693a3232fb8d",
+    "shallow": "true",
+    "purpose": "Read-only reference checkout; excluded from parent Git repository"
+  }
+]
