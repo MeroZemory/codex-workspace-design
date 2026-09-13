@@ -84,7 +84,7 @@ export class CodexSession extends EventEmitter {
       }
       this.ensureAlive(); this.connected = true;
       const requestedAccountId=this.accountId;
-      await this.call('initialize',{clientInfo:{name:'codex_workspace_runtime',title:'Codex Workspace',version:'0.1.0'},capabilities:{experimentalApi:true}});
+      await this.call('initialize',{clientInfo:{name:'codex_workspace_runtime',title:'Codex Workspace',version:'0.1.1'},capabilities:{experimentalApi:true}});
       this.socket.send(JSON.stringify({method:'initialized'}));
       if (requestedAccountId) await this.login(requestedAccountId);
       this.ensureAlive();
@@ -145,7 +145,7 @@ export class CodexSession extends EventEmitter {
     const { method, params = {} } = message;
     if(method === 'account/updated' && params.authMode !== 'chatgptAuthTokens') {
       this.cancelRecovery(); this.accountId=null; this.chatgptAccountId=null;
-      this.state({accountId:null,status:'error',detail:params.authMode?'CLI에서 직접 로그인했습니다. 앱에서 관리할 계정을 다시 선택하세요.':'CLI에서 로그아웃했습니다. 앱 계정을 다시 선택하기 전까지 자동 복구하지 않습니다.'});
+      this.state({accountId:null,accountState:'unmanaged',accountVerification:null,accountAppliedAt:null,status:'error',detail:params.authMode?'CLI에서 직접 로그인했습니다. 앱에서 관리할 계정을 다시 선택하세요.':'CLI에서 로그아웃했습니다. 앱 계정을 다시 선택하기 전까지 자동 복구하지 않습니다.'});
       return;
     }
     if (method === 'account/chatgptAuthTokens/refresh') {
@@ -207,9 +207,27 @@ export class CodexSession extends EventEmitter {
   async login(id) {
     const auth = await this.accounts.getAuth(id);
     this.ensureAlive();
-    await this.call('account/login/start',{type:'chatgptAuthTokens',...auth});
-    this.accountId = id;
-    this.chatgptAccountId = auth.chatgptAccountId;
+    await this.activateAccount(id, auth);
+  }
+  async activateAccount(id, auth) {
+    this.state({accountState:'applying',accountVerification:null});
+    try {
+      await this.call('account/login/start',{type:'chatgptAuthTokens',...auth});
+      const verification = await this.verifyAccount(id);
+      this.ensureAlive(); this.accountId = id; this.chatgptAccountId = auth.chatgptAccountId;
+      this.state({accountId:id,accountState:'applied',accountVerification:verification,accountAppliedAt:this.now()});
+    } catch (error) {
+      this.accountId = null; this.chatgptAccountId = null;
+      this.state({accountId:null,accountState:'failed',accountVerification:null,accountAppliedAt:null,detail:error.message});
+      throw error;
+    }
+  }
+  async verifyAccount(id) {
+    const result = await this.call('account/read',{refreshToken:false});
+    if (result.account?.type !== 'chatgpt') throw new Error('Codex에 적용된 ChatGPT 계정을 확인하지 못했습니다.');
+    const expected = this.accounts.list?.().find(account => account.id === id)?.email;
+    if (expected && result.account.email && expected.toLowerCase() !== result.account.email.toLowerCase()) throw new Error('Codex에 다른 계정이 적용되어 전환을 중단했습니다.');
+    return expected && result.account.email ? 'identity' : 'accepted';
   }
   async switchAccount(id, isValid = () => true) {
     if (this.authBusy || !['idle','waiting','error'].includes(this.status)) throw new Error('턴이 끝난 뒤 계정을 전환할 수 있습니다.');
@@ -228,8 +246,7 @@ export class CodexSession extends EventEmitter {
       if (activity !== this.activity || ['running','approval','input'].includes(this.status)) throw new Error('턴이 끝난 뒤 계정을 전환할 수 있습니다.');
       if(!isValid()) throw new Error('Account switch cancelled');
       this.loginInFlight = true;
-      await this.call('account/login/start',{type:'chatgptAuthTokens',...auth});
-      this.ensureAlive(); this.accountId = id; this.chatgptAccountId = auth.chatgptAccountId; this.state({accountId:id});
+      await this.activateAccount(id, auth);
     } finally { this.authBusy = false; this.loginInFlight = false; }
   }
   async getUsage() { return this.call('account/rateLimits/read'); }

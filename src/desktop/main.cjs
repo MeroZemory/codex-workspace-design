@@ -6,7 +6,7 @@ const { pathToFileURL } = require('node:url');
 if (process.env.CODEX_WORKSPACE_DATA_DIR) app.setPath('userData', path.join(process.env.CODEX_WORKSPACE_DATA_DIR, 'ui'));
 
 let window, client;
-const allowed = new Set(['snapshot','session.create','session.delete','session.switch','session.pin','session.review','session.read','session.cancelRecovery','terminal.attach','terminal.input','terminal.resize','workspace.save','accounts.refresh','runtime.shutdown']);
+const allowed = new Set(['snapshot','session.create','session.delete','session.switch','session.pin','session.review','session.read','session.cancelRecovery','terminal.attach','terminal.input','terminal.resize','workspace.save','accounts.discover','accounts.refresh','runtime.shutdown']);
 allowed.add('terminal.snapshot');
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function connectRuntime() {
@@ -19,7 +19,7 @@ async function connectRuntime() {
     const candidate = await connectIpc(paths.pipe, token, event);
     try {
       const snapshot = await candidate.invoke('snapshot');
-      if (snapshot.runtime.protocol !== 1) throw new Error('실행 중인 백그라운드 버전과 호환되지 않습니다. 세션을 종료하고 다시 실행하세요.');
+      if (snapshot.runtime.protocol !== 2) throw new Error('실행 중인 백그라운드 버전과 호환되지 않습니다. 세션을 종료하고 다시 실행하세요.');
       return candidate;
     } catch (error) { candidate.close(); throw error; }
   }
@@ -74,10 +74,10 @@ if (primaryUi) app.whenReady().then(async () => {
       const result = await dialog.showOpenDialog(sender, { properties: ['openDirectory'] });
       return result.canceled ? null : result.filePaths[0];
     }
-    if (method === 'accounts.import') {
-      const result = await dialog.showOpenDialog(sender, { title: 'Orca / OpenCodex 인증 JSON 가져오기', filters: [{ name: '인증 JSON', extensions: ['json'] }], properties: ['openFile'] });
+    if (method === 'accounts.repair') {
+      const result = await dialog.showOpenDialog(sender, { title: '새로 로그인한 계정의 auth.json 선택', filters: [{ name: 'Codex 인증', extensions: ['json'] }], properties: ['openFile'] });
       if (result.canceled) return null;
-      return (await runtime()).invoke(method, { path: result.filePaths[0] });
+      return (await runtime()).invoke('accounts.import', { path: result.filePaths[0] });
     }
     if (!allowed.has(method)) throw new Error('지원하지 않는 명령입니다.');
     return (await runtime()).invoke(method, params);

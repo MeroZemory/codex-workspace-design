@@ -16,7 +16,7 @@ const paths = runtimePaths(dataDir), token = randomUUID();
 const adapters = new Map();
 class MockSession {
   constructor(options) { Object.assign(this, options); this.inputs = []; adapters.set(this.id, this); }
-  async start() { this.onState({ status: 'idle' }); }
+  async start() { this.onState({ status: 'idle', accountId: this.accountId, accountState: 'applied', accountVerification: 'identity', accountAppliedAt: Date.now() }); }
   async stop() { this.stopped = true; }
   resize(cols, rows) { this.dimensions = { cols, rows }; }
   input(data) { this.inputs.push(data); this.onOutput(data); }
@@ -58,6 +58,7 @@ try {
   await expect(page.getByRole('tab', { name: '백그라운드  · 2' })).toBeVisible();
   await expect(page.locator('.terminal-grid:visible .terminal-panel')).toHaveCount(4);
   await expect(page.locator('[data-panel-id="p0"] .xterm-rows')).toContainText('UI fixture');
+  await expect(page.getByText('적용 계정 · 개인 계정 1', { exact: true }).first()).toBeVisible();
   await expect(page.locator('#error')).toBeHidden();
   await fs.mkdir(path.join(root, 'artifacts'), { recursive: true });
   await page.screenshot({ path: path.join(root, 'artifacts/workspace-30-sessions.png') });

@@ -1,6 +1,6 @@
 {
   "status": "PASS",
-  "testedAt": "2026-09-13T03:41:39.108Z",
+  "testedAt": "2026-09-13T07:27:04.134Z",
   "checks": [
     "Two simultaneous app-servers use distinct account headers and tokens with one shared CODEX_HOME",
     "Switching A to C preserves B and continues both original threads",

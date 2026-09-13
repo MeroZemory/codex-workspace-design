@@ -28,6 +28,14 @@ async function invoke(method, params) { if (!bridge) throw new Error('데스크�
 async function action(method, params) { try { return await invoke(method, params); } catch (error) { showError(error); throw error; } }
 function statusBadge(session) { const [icon, label] = states[session.status] || states.unknown; const badge = el('span', `state state-${session.status}`, `${icon} ${label}`); badge.title = session.detail || label; return badge; }
 function accountName(id) { const a = state.accounts.find((item) => item.id === id); return a?.label || a?.email || (id ? '계정 확인 중' : '계정 미연결'); }
+function appliedAccountLabel(session) {
+  const name = accountName(session.accountId);
+  if (session.accountState === 'applying') return `계정 적용 중 · ${name}`;
+  if (session.accountState === 'failed') return `계정 적용 실패 · ${name}`;
+  if (!session.accountId || session.accountState === 'unmanaged') return '적용 계정 · 미연결';
+  if (session.status === 'stopped' && session.accountState !== 'applied') return `마지막 계정 · ${name}`;
+  return `적용 계정 · ${name}`;
+}
 function basename(path) { return path?.split(/[\\/]/).filter(Boolean).pop() || '폴더 없음'; }
 function saveLayout() {
   layoutDirty = true;
@@ -140,7 +148,7 @@ function emptyWorkspace() {
   const node = el('div', 'empty-workspace');
   node.append(el('div', 'empty-symbol', '▦'), el('h2', '', '필요한 터미널을 한 화면에'), el('p', '', '프로젝트가 달라도 함께 배치하세요.\n작업 탭마다 배치를 따로 저장합니다.'));
   const actions = el('div', 'empty-actions'); actions.append(button('＋ 새 세션', createSession, 'primary'), button('기존 세션 배치', chooseSession)); node.append(actions);
-  if (!state.accounts.length) node.append(button('먼저 계정 가져오기', () => { $('#accounts-drawer').hidden = false; }, 'text-button'));
+  if (!state.accounts.length) node.append(button('Orca 계정 확인', () => { $('#accounts-drawer').hidden = false; }, 'text-button'));
   return node;
 }
 function addColumnHandles(grid, tab, columns) {
@@ -190,7 +198,7 @@ function createView(panel, tabId) {
 }
 function updateView(view, session, tab) {
   view.title.textContent = session.title || basename(session.cwd); view.title.title = session.cwd;
-  view.status.replaceChildren(statusBadge(session)); view.account.textContent = accountName(session.accountId); view.account.title = session.detail || session.cwd;
+  view.status.replaceChildren(statusBadge(session)); view.account.textContent = appliedAccountLabel(session); view.account.title = session.accountAppliedAt ? `Codex 적용 확인: ${new Date(session.accountAppliedAt).toLocaleTimeString('ko-KR')}` : session.detail || session.cwd;
   view.pin.textContent = session.pinned ? '● 고정됨' : '자동'; view.pin.title = session.pinned ? '계정 고정 해제' : '현재 계정 고정'; view.pin.disabled = !session.accountId;
   view.meta.querySelector('.review-button').hidden = !session.reviewNeeded;
   view.detail.textContent = session.detail || ''; view.detail.hidden = !session.detail;
@@ -252,7 +260,7 @@ async function createSession(defaults = {}) {
   const folderRow = el('div', 'input-row'); folderRow.append(cwd, button('폴더 선택', async () => { const value = await invoke('folder.pick'); if (value) cwd.value = typeof value === 'string' ? value : value.path || ''; }));
   const title = input(defaults.title || '', '폴더 이름 사용'); const account = accountSelect(); const resume = input(defaults.resumeId || '', '새 대화로 시작');
   const fields = [field('작업 폴더', folderRow), field('세션 이름 (선택)', title), field('시작 계정', account), field('기존 대화 ID로 재개 (선택)', resume)];
-  if (!state.accounts.length) fields.unshift(el('p', 'notice', '먼저 계정을 가져와 주세요. 계정 · 사용량에서 인증정보를 가져올 수 있습니다.'));
+  if (!state.accounts.length) fields.unshift(el('p', 'notice', 'Orca 계정을 찾지 못했습니다. 계정 · 사용량에서 Orca 다시 검색을 실행하세요.'));
   if (!await dialog('새 Codex 세션', fields, '시작')) return;
   const result = await action('session.create', { cwd: cwd.value.trim(), ...(title.value.trim() ? { title: title.value.trim() } : {}), ...(account.value ? { accountId: account.value } : {}), ...(resume.value.trim() ? { resumeId: resume.value.trim() } : {}) });
   const id = typeof result === 'string' ? result : result?.id || result?.session?.id;
@@ -272,10 +280,12 @@ function renderAccounts() {
   accountButton.title = accountButtonLabel;
   accountButton.setAttribute('aria-label', accountButtonLabel);
   accountButton.style.color = suggestedAccounts ? 'var(--amber)' : '';
-  $('#accounts-summary').textContent = `${state.accounts.length}개 계정 · ${state.accounts.filter((a) => a.status === 'ready' || a.status === 'active').length}개 사용 가능`;
-  if (!state.accounts.length) { list.append(el('div', 'account-empty', 'Orca 또는 OpenCodex의 계정 JSON을 가져오세요. 인증정보는 이 앱에서 독립적으로 관리합니다.')); return; }
+  const discovery = state.runtime?.orcaDiscovery;
+  const discoveryText = discovery?.status === 'error' ? ' · Orca 검색 오류' : discovery?.status === 'complete' ? ` · Orca ${discovery.recognized}개 인식` : '';
+  $('#accounts-summary').textContent = `${state.accounts.length}개 계정 · ${state.accounts.filter((a) => a.status === 'ready' || a.status === 'active').length}개 사용 가능${discoveryText}`;
+  if (!state.accounts.length) { list.append(el('div', 'account-empty', discovery?.status === 'error' ? `Orca 계정 검색 실패: ${discovery.error}` : 'Orca 표준 계정 폴더에서 인증정보를 찾지 못했습니다. Orca에서 계정을 등록한 뒤 다시 검색하세요.')); return; }
   for (const account of state.accounts) {
-    const node = el('section', 'account-item'); node.append(el('h3', '', account.label || account.email || '계정'), el('p', 'muted', `${account.email || ''} · ${account.plan || '플랜 미확인'}`));
+    const node = el('section', 'account-item'); node.append(el('h3', '', account.label || account.email || '계정'), el('p', 'muted', `${account.email || ''} · ${account.plan || '플랜 미확인'}${account.source === 'orca' ? ' · Orca 자동 인식' : ''}`));
     node.append(el('div', 'account-state', account.error || ({ ready: '사용 가능', active: '사용 가능', expired: '인증 만료', quarantined: '재인증 필요', reauth_required: '재인증 필요', unavailable: '사용 불가' }[account.status] || account.status || '상태 미확인')));
     const usage = account.usage?.rateLimits || account.usage;
     const windows = usage?.windows || ['primary', 'secondary'].filter((kind) => usage?.[kind]).map((kind) => ({ kind, ...usage[kind] }));
@@ -306,7 +316,7 @@ $('#columns').onchange = () => { const tab = activeTab(); if (tab) { tab.columns
 $('#rename-tab').onclick = async () => { const tab = activeTab(); if (!tab) return; const name = input(tab.title); name.required = true; if (await dialog('작업 탭 이름 변경', [field('이름', name)])) { tab.title = name.value.trim() || tab.title; renderWorkspace(); saveLayout(); } };
 $('#accounts-button').onclick = () => { $('#accounts-drawer').hidden = !$('#accounts-drawer').hidden; };
 $('#close-accounts').onclick = () => { $('#accounts-drawer').hidden = true; };
-for (const [selector, method] of [['#import-accounts', 'accounts.import'], ['#refresh-accounts', 'accounts.refresh']]) $(selector).onclick = async () => { const node = $(selector); node.disabled = true; try { await action(method); applySnapshot(await invoke('snapshot')); } catch {} finally { node.disabled = false; } };
+for (const [selector, method] of [['#import-accounts', 'accounts.discover'], ['#repair-account', 'accounts.repair'], ['#refresh-accounts', 'accounts.refresh']]) $(selector).onclick = async () => { const node = $(selector); node.disabled = true; try { await action(method); applySnapshot(await invoke('snapshot')); } catch {} finally { node.disabled = false; } };
 window.addEventListener('error', (event) => showError(event.error || event.message));
 window.addEventListener('unhandledrejection', (event) => { event.preventDefault(); showError(event.reason); });
 window.addEventListener('focus', () => { for (const view of views.values()) if (view.visible && view.root.contains(document.activeElement) && sessionById(view.sessionId)?.status !== 'stopped') attachView(view); });

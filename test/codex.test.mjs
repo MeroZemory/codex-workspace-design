@@ -51,6 +51,33 @@ test('late usage lookup cannot switch an account after a turn has started',async
   assert.deepEqual(calls,['thread/read']);
 });
 
+test('idle existing session reports the account only after Codex confirms the applied identity',async()=>{
+  const states=[]; const calls=[];
+  const session=new CodexSession({accountId:'A',now:()=>1234,onState:state=>states.push(state),accounts:{getAuth:async()=>({accessToken:'token-b',chatgptAccountId:'remote-b',chatgptPlanType:'pro'}),list:()=>[{id:'B',email:'b@example.invalid'}]}});
+  session.threadId='root';session.status='idle';
+  session.call=async(method,params)=>{calls.push({method,params});if(method==='thread/read')return {thread:{status:{type:'idle'}}};if(method==='account/read')return {account:{type:'chatgpt',email:'b@example.invalid'}};return {};};
+  await session.switchAccount('B');
+  assert.equal(calls[1].method,'account/login/start');assert.equal(calls[1].params.accessToken,'token-b');assert.equal(calls.at(-1).method,'account/read');
+  assert.equal(session.accountId,'B');assert.equal(session.chatgptAccountId,'remote-b');
+  assert.deepEqual(states.at(-1),{accountId:'B',accountState:'applied',accountVerification:'identity',accountAppliedAt:1234});
+});
+
+test('account identity mismatch clears the displayed account rather than lying about the applied identity',async()=>{
+  const session=new CodexSession({accountId:'A',accounts:{getAuth:async()=>({accessToken:'token-b',chatgptAccountId:'remote-b'}),list:()=>[{id:'B',email:'b@example.invalid'}]}});
+  session.threadId='root';session.status='idle';
+  session.call=async method=>method==='thread/read'?{thread:{status:{type:'idle'}}}:method==='account/read'?{account:{type:'chatgpt',email:'other@example.invalid'}}:{};
+  await assert.rejects(session.switchAccount('B'),/다른 계정/);
+  assert.equal(session.accountId,null);
+});
+
+test('lost login response clears the previous applied-account claim',async()=>{
+  const states=[]; const session=new CodexSession({accountId:'A',onState:state=>states.push(state),accounts:{getAuth:async()=>({accessToken:'token-b',chatgptAccountId:'remote-b'})}});
+  session.threadId='root';session.status='idle';
+  session.call=async method=>{if(method==='thread/read')return {thread:{status:{type:'idle'}}};throw new Error('Codex connection closed');};
+  await assert.rejects(session.switchAccount('B'),/connection closed/);
+  assert.equal(session.accountId,null);assert.equal(states.at(-1).accountState,'failed');
+});
+
 test('same turn outcome is reported once across notification and later idle lookup',()=>{
   const states=[]; const session=new CodexSession({onState:state=>states.push(state)});
   session.reportOutcome({id:'turn-1',status:'completed'});

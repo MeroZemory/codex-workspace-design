@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, writeFile, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { AccountManager, parseCredentials, forecast, normalizeUsage, dpapi } from '../src/runtime/accounts.mjs';
+import { AccountManager, parseCredentials, forecast, normalizeUsage, dpapi, discoverOrcaAuthFiles } from '../src/runtime/accounts.mjs';
 
 const jwt = (id = 'a', exp = 2000000000) => `header.${Buffer.from(JSON.stringify({ sub: 'person', exp, email: 'test@example.invalid', 'https://api.openai.com/auth': { chatgpt_account_id: id, chatgpt_plan_type: 'pro' } })).toString('base64url')}.signature`;
 const credential = (id = 'a') => ({ tokens: { access_token: jwt(id), refresh_token: `synthetic-refresh-${id}`, account_id: id } });
@@ -26,6 +26,29 @@ test('imports native auth and both OpenCodex store formats without source depend
   assert.equal(parseCredentials({ tokens: { ...credential().tokens, account_id: 'wrong' } }).length, 0);
   await writeFile(path, JSON.stringify({ one: { accessToken: jwt(), refreshToken: '', chatgptAccountId: 'a', sourceAuthPath: 'never-read' } }));
   await assert.rejects(manager.importFile(path), /No independent/);
+});
+
+test('discovers standard Orca account homes and independently imports every valid account', async t => {
+  const appData = await mkdtemp(join(tmpdir(), 'workspace-orca-test-'));
+  t.after(() => rm(appData, { recursive: true, force: true }));
+  for (const id of ['a', 'b']) {
+    const home = join(appData, 'orca', 'codex-accounts', id, 'home');
+    await mkdir(home, { recursive: true });
+    await writeFile(join(home, 'auth.json'), JSON.stringify(credential(id)));
+  }
+  const invalidHome = join(appData, 'orca', 'codex-accounts', 'invalid', 'home');
+  await mkdir(invalidHome, { recursive: true });
+  await writeFile(join(invalidHome, 'auth.json'), '{}');
+  const dataDir = join(appData, 'workspace-data');
+  const manager = new AccountManager({ dataDir, crypto: plainCrypto }); await manager.init();
+  assert.equal((await discoverOrcaAuthFiles({ appData })).length, 3);
+  assert.deepEqual(await manager.importOrca({ appData }), { status: 'complete', searchedAt: manager.orcaDiscovery.searchedAt, found: 3, recognized: 2, invalid: 1, imported: 2, duplicates: 0 });
+  assert.equal(manager.list().length, 2); assert.ok(manager.list().every(account => account.source === 'orca'));
+  const again = await manager.importOrca({ appData });
+  assert.equal(again.imported, 0); assert.equal(again.duplicates, 2);
+  const stored = manager.account(manager.list()[0].id); stored.status = 'reauth_required'; stored.refreshInFlight = true; stored.refreshToken = 'rotated-by-workspace';
+  const stale = await manager.importOrca({ appData });
+  assert.equal(stale.imported, 0); assert.equal(stored.refreshToken, 'rotated-by-workspace'); assert.equal(stored.status, 'reauth_required');
 });
 
 test('concurrent refreshes share one rotation and persist new grant before returning', async t => {
@@ -72,6 +95,7 @@ test('reset rollover breaks trend and healthy current or pinned account takes pr
 test('Windows DPAPI round-trip protects synthetic secret at rest', { skip: process.platform !== 'win32' }, async () => {
   const secret = Buffer.from('synthetic-secret-only'); const encrypted = await dpapi('encrypt', secret);
   assert.ok(!encrypted.includes(secret)); assert.deepEqual(await dpapi('decrypt', encrypted), secret);
+  await assert.rejects(dpapi('decrypt', Buffer.from('not-a-dpapi-payload')), /failed/);
 });
 
 test('pacing warns before consumption time plus response buffer exceeds the reset deadline', () => {

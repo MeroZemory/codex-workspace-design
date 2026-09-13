@@ -10,7 +10,7 @@ const paths = runtimePaths(dataDir), children = [];
 let client;
 const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 try {
-  for (let i = 0; i < 2; i++) children.push(spawn(process.execPath, ['src/runtime/boot.mjs'], { windowsHide: true, stdio: 'ignore', env: { ...process.env, CODEX_WORKSPACE_DATA_DIR: dataDir } }));
+  for (let i = 0; i < 2; i++) children.push(spawn(process.execPath, ['src/runtime/boot.mjs'], { windowsHide: true, stdio: 'ignore', env: { ...process.env, CODEX_WORKSPACE_DATA_DIR: dataDir, CODEX_WORKSPACE_ORCA_APPDATA: dataDir } }));
   for (let i = 0; i < 100; i++) {
     try { client = await connectIpc(paths.pipe, await fs.readFile(paths.token, 'utf8')); break; } catch { await wait(100); }
   }

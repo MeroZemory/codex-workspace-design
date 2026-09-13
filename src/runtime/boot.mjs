@@ -44,6 +44,10 @@ try {
   await ready.init(); service = ready;
   await fs.writeFile(paths.token, token, { mode: 0o600 });
   markReady();
+  accounts.importOrca().catch(error => {
+    accounts.orcaDiscovery = { status: 'error', error: error.message, found: 0, recognized: 0, imported: 0, duplicates: 0, invalid: 0 };
+    service.changed();
+  });
   timer = setInterval(() => service.refreshAccounts().catch(error => ipc.broadcast({ type: 'error', message: error.message })), 60000);
   console.log('Codex Workspace runtime ready');
 } catch (error) {

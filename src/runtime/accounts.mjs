@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdir, readFile, open, rename, stat } from 'node:fs/promises';
-import { join, isAbsolute } from 'node:path';
+import { mkdir, readFile, open, rename, stat, readdir, realpath } from 'node:fs/promises';
+import { join, isAbsolute, resolve, sep } from 'node:path';
 
 const AUTH_CLAIM = 'https://api.openai.com/auth';
 const hash = value => createHash('sha256').update(value).digest('hex');
@@ -11,7 +11,7 @@ const claims = token => { try { return JSON.parse(Buffer.from(token.split('.')[1
 export function dpapi(operation, input) {
   if (process.platform !== 'win32') throw new Error('Secure account storage currently requires Windows.');
   return new Promise((resolve, reject) => {
-    const script = `Add-Type -AssemblyName System.Security; $b=[Convert]::FromBase64String([Console]::In.ReadToEnd()); $r=[Security.Cryptography.ProtectedData]::${operation === 'encrypt' ? 'Protect' : 'Unprotect'}($b,$null,[Security.Cryptography.DataProtectionScope]::CurrentUser); [Console]::Out.Write([Convert]::ToBase64String($r))`;
+    const script = `$ErrorActionPreference='Stop'; try { Add-Type -AssemblyName System.Security; $b=[Convert]::FromBase64String([Console]::In.ReadToEnd()); $r=[Security.Cryptography.ProtectedData]::${operation === 'encrypt' ? 'Protect' : 'Unprotect'}($b,$null,[Security.Cryptography.DataProtectionScope]::CurrentUser); [Console]::Out.Write([Convert]::ToBase64String($r)) } catch { exit 1 }`;
     const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] });
     let output = ''; let settled = false;
     const finish = (error, value) => { if (settled) return; settled = true; clearTimeout(timer); error ? reject(error) : resolve(value); };
@@ -20,7 +20,12 @@ export function dpapi(operation, input) {
     child.stderr.resume();
     child.on('error', () => finish(new Error('Secure account storage could not start.')));
     child.stdin.on('error', () => finish(new Error('Secure account storage failed.')));
-    child.on('close', code => finish(code === 0 ? null : new Error('Secure account storage failed.'), Buffer.from(output.trim(), 'base64')));
+    child.on('close', code => {
+      const encoded = output.trim();
+      if (code !== 0 || !/^[A-Za-z0-9+/]+={0,2}$/.test(encoded)) return finish(new Error('Secure account storage failed.'));
+      const decoded = Buffer.from(encoded, 'base64');
+      finish(decoded.length ? null : new Error('Secure account storage failed.'), decoded);
+    });
     child.stdin.end(Buffer.from(input).toString('base64'));
   });
 }
@@ -44,6 +49,26 @@ export function parseCredentials(document) {
       label: String(entry.label ?? entry.name ?? payload.email ?? idClaims.email ?? accountId).slice(0, 120), status: 'ready', history: [] });
   }
   return result;
+}
+
+export async function discoverOrcaAuthFiles({ appData = process.env.CODEX_WORKSPACE_ORCA_APPDATA || process.env.APPDATA } = {}) {
+  if (typeof appData !== 'string' || !isAbsolute(appData) || (process.platform === 'win32' && appData.startsWith('\\\\'))) return [];
+  const root = resolve(appData, 'orca', 'codex-accounts');
+  let entries;
+  try { entries = await readdir(root, { withFileTypes: true }); }
+  catch (error) { if (error.code === 'ENOENT') return []; throw error; }
+  if (entries.length > 1024) throw new Error('Too many Orca account folders.');
+  const realAppData = await realpath(appData); const realRoot = await realpath(root); const files = [];
+  if (!realRoot.startsWith(realAppData + sep)) return [];
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    try {
+      const file = await realpath(join(root, entry.name, 'home', 'auth.json'));
+      if (!file.startsWith(realRoot + sep) || !(await stat(file)).isFile()) continue;
+      files.push(file);
+    } catch { /* Missing or inaccessible account homes are not importable. */ }
+  }
+  return files.sort();
 }
 
 export function normalizeUsage(response, now = Date.now()) {
@@ -90,7 +115,8 @@ export function forecast(history, now = Date.now()) {
 export class AccountManager {
   constructor({ dataDir, onChange = () => {}, fetch: fetcher = globalThis.fetch, crypto = dpapi, now = Date.now }) {
     this.path = join(dataDir, 'accounts.dpapi'); this.dataDir = dataDir; this.onChange = onChange; this.fetcher = fetcher; this.crypto = crypto; this.now = now;
-    this.accounts = []; this.queue = Promise.resolve(); this.flights = new Map(); this.usageFlights = new Map();
+    this.accounts = []; this.queue = Promise.resolve(); this.flights = new Map(); this.usageFlights = new Map(); this.discoveryFlight = null;
+    this.orcaDiscovery = { status: 'pending', found: 0, recognized: 0, imported: 0, duplicates: 0, invalid: 0 };
   }
   async init() {
     await mkdir(this.dataDir, { recursive: true, mode: 0o700 });
@@ -108,7 +134,7 @@ export class AccountManager {
     try { await file.writeFile(encrypted); await file.sync(); } finally { await file.close(); }
     await rename(temp, this.path); this.onChange();
   }
-  list() { return this.accounts.map(a => ({ id: a.id, label: a.label, email: a.email, plan: a.plan, status: a.status, error: a.error, usage: a.history.at(-1) ?? null, forecast: forecast(a.history, this.now()) })); }
+  list() { return this.accounts.map(a => ({ id: a.id, label: a.label, email: a.email, plan: a.plan, source: a.source, status: a.status, error: a.error, usage: a.history.at(-1) ?? null, forecast: forecast(a.history, this.now()) })); }
   account(id) { const a = this.accounts.find(a => a.id === id); if (!a) throw new Error('Account not found.'); return a; }
   async importFile(path) {
     const read = async file => { if ((await stat(file)).size > 8 * 1024 * 1024) throw new Error('Account file exceeds size limit.'); try { return JSON.parse(await readFile(file, 'utf8')); } catch { throw new Error('Account JSON could not be read.'); } };
@@ -125,13 +151,40 @@ export class AccountManager {
     }
     const candidates = parseCredentials(raw);
     if (!candidates.length) throw new Error('No independent ChatGPT credentials found. Select auth.json with a refresh token, or an Orca account registry. Source-linked OpenCodex entries alone cannot be migrated independently.');
+    if (candidates.length > 1024) throw new Error('Too many accounts.');
+    return this.importCandidates(candidates, { repairQuarantined: true });
+  }
+  importOrca(options = {}) {
+    if (this.discoveryFlight) return this.discoveryFlight;
+    const pending = this.scanOrca(options);
+    this.discoveryFlight = pending; pending.finally(() => { if (this.discoveryFlight === pending) this.discoveryFlight = null; }).catch(() => {});
+    return pending;
+  }
+  async scanOrca(options = {}) {
+    const files = await discoverOrcaAuthFiles(options);
+    const candidates = []; let invalid = 0; let totalBytes = 0;
+    for (const file of files) {
+      try {
+        const size = (await stat(file)).size; totalBytes += size;
+        if (size > 8 * 1024 * 1024 || totalBytes > 64 * 1024 * 1024) { invalid++; continue; }
+        const parsed = parseCredentials(JSON.parse(await readFile(file, 'utf8')));
+        if (!parsed.length || candidates.length + parsed.length > 1024) { invalid++; continue; }
+        candidates.push(...parsed.map(candidate => ({ ...candidate, source: 'orca' })));
+      } catch { invalid++; }
+    }
+    const result = candidates.length ? await this.importCandidates(candidates, { repairQuarantined: false }) : { imported: 0, duplicates: 0 };
+    this.orcaDiscovery = { status: 'complete', searchedAt: this.now(), found: files.length, recognized: candidates.length, invalid, ...result };
+    this.onChange();
+    return this.orcaDiscovery;
+  }
+  importCandidates(candidates, { repairQuarantined = false } = {}) {
     return this.mutate(async () => {
       const previous = structuredClone(this.accounts);
       let imported = 0; let duplicates = 0;
       for (const candidate of candidates) {
         const existing = this.accounts.find(a => a.id === candidate.id || a.refreshToken === candidate.refreshToken);
         if (existing) {
-          if (existing.status === 'reauth_required' && existing.refreshToken !== candidate.refreshToken) {
+          if (repairQuarantined && existing.status === 'reauth_required' && existing.refreshToken !== candidate.refreshToken) {
             Object.assign(existing, candidate, { history: existing.history, refreshInFlight: false }); delete existing.error; imported++;
           } else duplicates++;
           continue;
@@ -194,5 +247,5 @@ export class AccountManager {
     const nextReset = a => Math.min(...(a.history.at(-1)?.windows ?? []).filter(w => w.resetAt > this.now() && w.remainingPercent > 0).map(w => w.resetAt));
     return this.accounts.filter(eligible).sort((a, b) => nextReset(a) - nextReset(b))[0]?.id ?? null;
   }
-  async close() { await Promise.allSettled(this.usageFlights.values()); await this.queue; }
+  async close() { await Promise.allSettled([this.discoveryFlight, ...this.usageFlights.values()].filter(Boolean)); await this.queue; }
 }

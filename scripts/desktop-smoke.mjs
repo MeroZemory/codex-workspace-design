@@ -11,7 +11,11 @@ import { setTimeout as delay } from 'node:timers/promises';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'cw-desktop-'));
-const env = { ...process.env, CODEX_WORKSPACE_DATA_DIR: dataDir }; delete env.ELECTRON_RUN_AS_NODE;
+const syntheticJwt = `header.${Buffer.from(JSON.stringify({ sub: 'desktop-smoke', exp: 2000000000, email: 'desktop-smoke@example.invalid', 'https://api.openai.com/auth': { chatgpt_account_id: 'desktop-smoke', chatgpt_plan_type: 'pro' } })).toString('base64url')}.signature`;
+const orcaHome = path.join(dataDir, 'orca', 'codex-accounts', 'synthetic', 'home');
+await fs.mkdir(orcaHome, { recursive: true });
+await fs.writeFile(path.join(orcaHome, 'auth.json'), JSON.stringify({ tokens: { access_token: syntheticJwt, refresh_token: 'synthetic-desktop-refresh', account_id: 'desktop-smoke' } }));
+const env = { ...process.env, CODEX_WORKSPACE_DATA_DIR: dataDir, CODEX_WORKSPACE_ORCA_APPDATA: dataDir }; delete env.ELECTRON_RUN_AS_NODE;
 let app, client;
 const closedApplications = [];
 async function launch() {
@@ -51,7 +55,9 @@ async function waitForExit(application) {
   while (true) {
     try { process.kill(application.mainPid, 0); }
     catch (error) { if (error.code === 'ESRCH') break; throw error; }
-    if (Date.now() - start > 30000) throw new Error(`UI process ${application.mainPid} failed to finish cleanup`);
+    // Electron may keep its main process in native teardown for tens of seconds
+    // after the window is already gone. Reopen behavior is verified separately.
+    if (Date.now() - start > 60000) throw new Error(`UI process ${application.mainPid} failed to finish cleanup`);
     await delay(100);
   }
   console.log(`UI process ${application.mainPid} cleanup observed after ${Date.now() - start} ms.`);
@@ -62,10 +68,15 @@ try {
   page.setDefaultTimeout(15000);
   const errors = []; page.on('pageerror', error => errors.push(error.message));
   await page.waitForFunction(() => document.querySelector('#connection')?.textContent.includes('연결됨'), { timeout: 30000 });
+  await page.waitForFunction(() => document.querySelector('#accounts-summary')?.textContent.includes('Orca 1개 인식'));
+  const discovered = await page.evaluate(() => window.workspace.invoke('snapshot'));
+  if (discovered.accounts.length !== 1 || discovered.accounts[0].source !== 'orca') throw new Error('Orca account was not automatically discovered');
   await fs.mkdir(path.join(root, 'artifacts'), { recursive: true });
   await page.screenshot({ path: path.join(root, 'artifacts', 'desktop-empty.png') });
   await page.locator('#accounts-button').click();
   await page.locator('#accounts-drawer').waitFor({ state: 'visible' });
+  await page.getByText('Orca 자동 인식', { exact: false }).waitFor();
+  await page.getByRole('button', { name: '재인증 파일 선택' }).waitFor();
   await page.locator('#close-accounts').click();
   await page.locator('#new-tab').click();
   await page.locator('#rename-tab').click();

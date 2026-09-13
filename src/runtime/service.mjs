@@ -22,7 +22,7 @@ export class WorkspaceService {
       for (const session of saved.sessions) this.sessions.set(session.id, { ...session, status: 'stopped', generation: (session.generation || 0) + 1, detail: '실행부가 종료됐습니다. 대화 ID로 새 세션에서 재개할 수 있습니다.' });
     }
   }
-  snapshot() { return { sessions: [...this.sessions.values()].map(s => ({ ...s })), accounts: this.accounts.list(), workspace: this.workspace, runtime: { version: '0.1.0', protocol: 1, codexPath: this.codexPath } }; }
+  snapshot() { return { sessions: [...this.sessions.values()].map(s => ({ ...s })), accounts: this.accounts.list(), workspace: this.workspace, runtime: { version: '0.1.1', protocol: 2, codexPath: this.codexPath, orcaDiscovery: this.accounts.orcaDiscovery } }; }
   changed() { this.broadcast({ type: 'snapshot', data: this.snapshot() }); }
   async save() {
     const value = { version: 1, sessions: [...this.sessions.values()].map(s => ({ ...s })), workspace: structuredClone(this.workspace) };
@@ -58,7 +58,7 @@ export class WorkspaceService {
     await this.accounts.getAuth(accountId);
     if (this.closing) throw new Error('실행부가 종료 중입니다.');
     const id = randomUUID();
-    const session = { id, title: params.title || path.basename(params.cwd), cwd: path.resolve(params.cwd), threadId: params.resumeId || null, accountId, pinned: Boolean(params.pinned), status: 'starting', detail: '', unread: false, reviewNeeded: false, cols: 100, rows: 30, generation: 1 };
+    const session = { id, title: params.title || path.basename(params.cwd), cwd: path.resolve(params.cwd), threadId: params.resumeId || null, accountId, accountState: 'applying', accountVerification: null, pinned: Boolean(params.pinned), status: 'starting', detail: '', unread: false, reviewNeeded: false, cols: 100, rows: 30, generation: 1 };
     this.sessions.set(id, session);
     const generation = session.generation;
     const screen = new Screen(output => this.broadcast({ type: 'terminal', id, ...output }), { onInput: data => {
@@ -82,7 +82,7 @@ export class WorkspaceService {
     this.adapters.set(id, adapter); this.changed(); await this.save();
     try { await adapter.start(); }
     catch (error) {
-      if (this.sessions.get(id)?.generation === generation) { session.status = 'error'; session.detail = error.message; this.changed(); await this.save(); }
+      if (this.sessions.get(id)?.generation === generation) { session.status = 'error'; session.accountState = 'failed'; session.detail = error.message; this.changed(); await this.save(); }
       await adapter.stop().catch(() => {});
       this.adapters.delete(id);
       throw error;
@@ -179,10 +179,11 @@ export class WorkspaceService {
     }
     if (method === 'workspace.save') { this.workspace = this.validateWorkspace(params); await this.save(); this.changed(); return this.workspace; }
     if (method === 'accounts.import') { if (!text(params.path, 32768) || !path.isAbsolute(params.path)) throw new Error('인증 JSON 파일을 선택하세요.'); const result = await this.accounts.importFile(params.path); this.changed(); return result; }
+    if (method === 'accounts.discover') { const result = await this.accounts.importOrca(); this.changed(); return result; }
     if (method === 'accounts.refresh') return this.refreshAccounts();
     if (method === 'runtime.shutdown') {
       if (this.adapters.size || this.operations.size || this.pendingCreates || this.pendingStops || this.refreshing) throw new Error('세션과 진행 중인 요청을 모두 종료한 뒤 실행부를 종료하세요.');
-      this.closing = true; await this.save(); return { shutdown: true };
+      this.closing = true; await this.accounts.close?.(); await this.save(); return { shutdown: true };
     }
     if (method.startsWith('terminal.')) {
       const session = this.requireSession(params.id), screen = this.screens.get(params.id), adapter = this.adapters.get(params.id);
