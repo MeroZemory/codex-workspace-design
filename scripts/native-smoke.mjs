@@ -1,0 +1,10 @@
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import path from 'node:path';
+import assert from 'node:assert/strict';
+const executable = path.resolve(process.env.CODEX_WORKSPACE_TEST_EXECUTABLE || 'release/win-unpacked/Codex Workspace.exe');
+const modulePath = path.join(path.dirname(executable), 'resources', 'app.asar', 'node_modules', 'node-pty');
+const script = `const p = require(process.argv[1]).spawn('cmd.exe', ['/d','/c','echo PACKAGED_PTY_OK'], { cols:80, rows:24, env:process.env }); p.onData(d => process.stdout.write(d)); p.onExit(e => process.exit(e.exitCode));`;
+const result = await promisify(execFile)(executable, ['-e', script, modulePath], { env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' }, windowsHide: true, timeout: 10000 });
+assert.match(result.stdout, /PACKAGED_PTY_OK/);
+console.log('PASS: packaged Electron loads native PTY from ASAR and executes CMD.');

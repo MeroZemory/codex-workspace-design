@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "testedAt": "2026-09-13T03:41:39.108Z",
+  "checks": [
+    "Two simultaneous app-servers use distinct account headers and tokens with one shared CODEX_HOME",
+    "Switching A to C preserves B and continues both original threads",
+    "HTTP 401 requests external refresh and retries with returned token",
+    "Protocol permits a different account in a 401 refresh response; production adapter intentionally does not enable this policy",
+    "429 usage rejection preserves failed turn and userMessage-only full history",
+    "Shared config and skill unchanged; no auth.json written",
+    "Production adapter switches account at an authoritative idle boundary",
+    "Production adapter retries pure-text pre-execution quota failure on F through the original TUI and completes",
+    "Production adapter rejects unauthenticated WS clients and PTY keyboard prompt produces C request, running state, and completed outcome",
+    "Ephemeral auth override prevents native logout from modifying shared auth.json and clears managed account badge without automatic relogin"
+  ],
+  "limitations": [
+    "Synthetic local HTTP provider; no real subscription or quota tested",
+    "Production adapter keyboard and observer coexistence tested",
+    "External chatgptAuthTokens API is unstable and marked internal by Codex schema"
+  ]
+}

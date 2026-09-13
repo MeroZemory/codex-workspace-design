@@ -19,3 +19,19 @@
 !/config-auth-verification/schema/v2/
 /config-auth-verification/schema/v2/*
 !/config-auth-verification/schema/v2/LoginAccountParams.json
+!/src/
+!/scripts/
+!/test/
+!/experiments/
+/experiments/tmp*/
+/experiments/*.log
+!/package-lock.json
+!/package.json
+# Runtime and imported credentials must stay out even inside source directories.
+**/auth.json
+**/credentials.json
+**/accounts.dpapi
+**/ipc-token
+**/workspace.json
+**/.env
+**/.env.*
