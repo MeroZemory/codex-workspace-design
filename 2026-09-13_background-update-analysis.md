@@ -1,6 +1,6 @@
 # 창 닫기와 업데이트 중 Codex 작업 유지 검토
 
-작성일: 2026-09-13. 구현이나 업데이트 실험 없이 Orca 소스와 저장소 문서를 분석했다. 기준은 [refs/orca](refs/orca)의 `56fcb544e0574ee38c53b9e09bee693a3232fb8d`이며 설치 Orca와 동일 빌드인지는 검증하지 않았다.
+작성일: 2026-09-13. 구현이나 업데이트 실험 없이 Orca 소스와 저장소 문서를 분석했다. 기준은 [refs/orca](https://github.com/stablyai/orca/tree/56fcb544e0574ee38c53b9e09bee693a3232fb8d)의 `56fcb544e0574ee38c53b9e09bee693a3232fb8d`이며 설치 Orca와 동일 빌드인지는 검증하지 않았다.
 
 ## 판단
 
@@ -12,13 +12,13 @@
 
 | 근거 | 실제 코드·문서 내용 | 판단에 미치는 영향 |
 |---|---|---|
-| [daemon-launched-child.ts](refs/orca/src/main/daemon/daemon-launched-child.ts), 73행 이후 | `detached: true`, 별도 실행 경로, `ELECTRON_RUN_AS_NODE`, 시작 완료 후 참조 해제 | 화면 앱과 터미널 소유 프로세스의 수명을 분리한다. |
-| [main-process-quit.ts](refs/orca/src/main/startup/main-process-quit.ts), 224행 이후 / [kill-all.ts](refs/orca/src/main/ipc/pty/kill-all.ts) | 일반 종료는 데몬 연결을 끊고, in-process PTY 종료와 데몬 PTY 보존을 구분 | 업데이트 코드의 `killAllPty()` 이름만 보고 모든 터미널을 종료한다고 해석하면 안 된다. |
-| [host relocation](refs/orca/src/main/daemon/daemon-host-relocation.ts), 파일 상단 / [설계 설명](refs/orca/docs/reference/windows-daemon-host-relocation.md) | Windows 설치 프로그램의 프로세스 종료 범위 밖으로 Electron 기반 호스트를 별도 경로에 복사 | 업데이트 프로그램까지 포함한 배포 설계가 필요하다. 독립 프로세스 생성만으로 충분하지 않다. |
-| [protocol version](refs/orca/src/main/daemon/daemon-protocol-version.ts) / [legacy adapters](refs/orca/src/main/daemon/daemon-legacy-adapters.ts) | 현재 프로토콜 36, 1–35의 기존 데몬 탐색·연결, 기존 PTY를 원래 데몬에 유지 | 새 UI가 구버전 실행부를 지원하는 유지보수 비용이 존재한다. |
-| [client connections](refs/orca/src/main/daemon/daemon-client-connections.ts), 108행 이후 | 버전·연결 토큰 검사 | 로컬 IPC도 인증과 호환성 판단이 필요하다. |
-| [reattach tests](refs/orca/src/main/daemon/reattach-snapshot.test.ts) | 일반 화면·대체 화면·스크롤백·재그리기·중복 표시 테스트 | 실행 생존과 화면의 정확한 복원은 별개의 문제다. 테스트가 있다는 사실을 현재 버그가 남아 있다는 증거로 취급하지 않는다. |
-| [idle lifecycle](refs/orca/src/main/daemon/daemon-server-lifecycle.ts) / [idle tests](refs/orca/src/main/daemon/daemon-idle-shutdown.test.ts) | 소유권·클라이언트·빈 상태를 고려한 종료 | 남는 프로세스와 너무 이른 종료 사이에 명시적 수명주기 관리가 필요하다. |
+| [daemon-launched-child.ts](https://github.com/stablyai/orca/blob/56fcb544e0574ee38c53b9e09bee693a3232fb8d/src/main/daemon/daemon-launched-child.ts), 73행 이후 | `detached: true`, 별도 실행 경로, `ELECTRON_RUN_AS_NODE`, 시작 완료 후 참조 해제 | 화면 앱과 터미널 소유 프로세스의 수명을 분리한다. |
+| [main-process-quit.ts](https://github.com/stablyai/orca/blob/56fcb544e0574ee38c53b9e09bee693a3232fb8d/src/main/startup/main-process-quit.ts), 224행 이후 / [kill-all.ts](https://github.com/stablyai/orca/blob/56fcb544e0574ee38c53b9e09bee693a3232fb8d/src/main/ipc/pty/kill-all.ts) | 일반 종료는 데몬 연결을 끊고, in-process PTY 종료와 데몬 PTY 보존을 구분 | 업데이트 코드의 `killAllPty()` 이름만 보고 모든 터미널을 종료한다고 해석하면 안 된다. |
+| [host relocation](https://github.com/stablyai/orca/blob/56fcb544e0574ee38c53b9e09bee693a3232fb8d/src/main/daemon/daemon-host-relocation.ts), 파일 상단 / [설계 설명](https://github.com/stablyai/orca/blob/56fcb544e0574ee38c53b9e09bee693a3232fb8d/docs/reference/windows-daemon-host-relocation.md) | Windows 설치 프로그램의 프로세스 종료 범위 밖으로 Electron 기반 호스트를 별도 경로에 복사 | 업데이트 프로그램까지 포함한 배포 설계가 필요하다. 독립 프로세스 생성만으로 충분하지 않다. |
+| [protocol version](https://github.com/stablyai/orca/blob/56fcb544e0574ee38c53b9e09bee693a3232fb8d/src/main/daemon/daemon-protocol-version.ts) / [legacy adapters](https://github.com/stablyai/orca/blob/56fcb544e0574ee38c53b9e09bee693a3232fb8d/src/main/daemon/daemon-legacy-adapters.ts) | 현재 프로토콜 36, 1–35의 기존 데몬 탐색·연결, 기존 PTY를 원래 데몬에 유지 | 새 UI가 구버전 실행부를 지원하는 유지보수 비용이 존재한다. |
+| [client connections](https://github.com/stablyai/orca/blob/56fcb544e0574ee38c53b9e09bee693a3232fb8d/src/main/daemon/daemon-client-connections.ts), 108행 이후 | 버전·연결 토큰 검사 | 로컬 IPC도 인증과 호환성 판단이 필요하다. |
+| [reattach tests](https://github.com/stablyai/orca/blob/56fcb544e0574ee38c53b9e09bee693a3232fb8d/src/main/daemon/reattach-snapshot.test.ts) | 일반 화면·대체 화면·스크롤백·재그리기·중복 표시 테스트 | 실행 생존과 화면의 정확한 복원은 별개의 문제다. 테스트가 있다는 사실을 현재 버그가 남아 있다는 증거로 취급하지 않는다. |
+| [idle lifecycle](https://github.com/stablyai/orca/blob/56fcb544e0574ee38c53b9e09bee693a3232fb8d/src/main/daemon/daemon-server-lifecycle.ts) / [idle tests](https://github.com/stablyai/orca/blob/56fcb544e0574ee38c53b9e09bee693a3232fb8d/src/main/daemon/daemon-idle-shutdown.test.ts) | 소유권·클라이언트·빈 상태를 고려한 종료 | 남는 프로세스와 너무 이른 종료 사이에 명시적 수명주기 관리가 필요하다. |
 
 Orca의 Windows 설명은 경로 기반 종료를 피하는 경우와 실행 파일명 기반 fallback에서 프로세스가 종료되어 cold restore하는 경우를 구분한다. 복사 실패 시 설치 경로의 실행 파일로 돌아가는 경로도 있다. 따라서 Orca도 모든 업데이트에서 동일 프로세스 생존을 보장하는 구조로 읽으면 안 된다. 문서의 과거 보안 제품 탐지 사례는 유지관리자의 기록이며 이번에 재현한 결과가 아니다.
 

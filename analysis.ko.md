@@ -73,10 +73,10 @@ flowchart LR
 
 원시 결과와 이벤트는 다음 폴더에 있다.
 
-- [기본 상태 시험](probe-7h7_rnf1/result.json), [이벤트](probe-7h7_rnf1/events.json)
-- [승인·입력 시험](probe-approval-k7jus_lt/result.json), [이벤트](probe-approval-k7jus_lt/events.json)
-- [동시 실행·복구·결과 조회 시험](probe-reconnect-jnf1sfom/result.json), [이벤트](probe-reconnect-jnf1sfom/events.json)
-- [실패 및 초기 시도 기록](probe-concurrent-1lygr01j/result.json), [이벤트](probe-concurrent-1lygr01j/events.json)
+- 기본 상태 시험 — 로컬 비공개 자료 `probe-7h7_rnf1/result.json`, 이벤트 — 로컬 비공개 자료 `probe-7h7_rnf1/events.json`
+- 승인·입력 시험 — 로컬 비공개 자료 `probe-approval-k7jus_lt/result.json`, 이벤트 — 로컬 비공개 자료 `probe-approval-k7jus_lt/events.json`
+- 동시 실행·복구·결과 조회 시험 — 로컬 비공개 자료 `probe-reconnect-jnf1sfom/result.json`, 이벤트 — 로컬 비공개 자료 `probe-reconnect-jnf1sfom/events.json`
+- 실패 및 초기 시도 기록 — 로컬 비공개 자료 `probe-concurrent-1lygr01j/result.json`, 이벤트 — 로컬 비공개 자료 `probe-concurrent-1lygr01j/events.json`
 
 초기 시도에서는 두 가지 구현상 주의점도 드러났다. 턴 제출 응답 직후에는 실제 실행 상태 전환보다 조회가 먼저 도착해 `idle`을 볼 수 있었다. 또 `itemsView: none`은 잘못된 값이며, 올바른 값은 `notLoaded`였다. 수정된 시험은 활성 이벤트를 확인한 뒤 재연결했고, 두 스레드의 활성 상태와 마지막 턴 결과를 정상 조회했다. 초기 실패 기록도 그대로 보존했다.
 

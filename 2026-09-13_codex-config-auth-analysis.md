@@ -14,7 +14,7 @@
 
 ## 2. 확보한 소스와 검증 범위
 
-공식 저장소 `https://github.com/openai/codex.git`를 [refs/codex](refs/codex)에 얕은 클론으로 확보했다. 최초 main HEAD는 `b979d4f1f04538ba5a5fcc434d499c007bfe1b8c`다. 이후 설치 CLI의 버전 표기 `codex-cli 0.154.0`에 맞춰 `rust-v0.154.0`을 fetch하고 detached HEAD로 체크아웃했다. 분석 기준 커밋은 `6b9826e3aa83b1a5947db50f4332cb9c65f1b340`다.
+공식 저장소 `https://github.com/openai/codex.git`를 [refs/codex](https://github.com/openai/codex/tree/6b9826e3aa83b1a5947db50f4332cb9c65f1b340)에 얕은 클론으로 확보했다. 최초 main HEAD는 `b979d4f1f04538ba5a5fcc434d499c007bfe1b8c`다. 이후 설치 CLI의 버전 표기 `codex-cli 0.154.0`에 맞춰 `rust-v0.154.0`을 fetch하고 detached HEAD로 체크아웃했다. 분석 기준 커밋은 `6b9826e3aa83b1a5947db50f4332cb9c65f1b340`다.
 
 이전 조사 문서가 기록한 동일 이름 태그의 커밋과 이번 fetch 결과가 다르므로, 이전 기록을 덮어쓰거나 같은 소스라고 간주하지 않는다. 이 차이의 원인은 이번 조사에서 규명하지 않았다. 버전 문자열 일치만으로 설치 바이너리가 이 커밋에서 빌드되었다고 증명할 수 없다. 아래에서는 현재 클론의 소스 관찰과 설치 바이너리의 스키마 관찰을 구분한다.
 
@@ -72,15 +72,15 @@ App Server의 `account/login/start`에는 `chatgptAuthTokens` 방식이 있다. 
 
 | 근거 ID | 소스 또는 관찰 | 확인한 사실 | 설계 반영 |
 |---|---|---|---|
-| E01 | [config loader](refs/codex/codex-rs/config/src/loader/mod.rs), 109–121행 | 사용자 홈과 프로젝트를 포함한 설정 계층 | 계정 선택과 환경 선택 분리 |
-| E02 | [skill roots](refs/codex/codex-rs/ext/skills/src/host_roots.rs), 73행 이후 | 홈·프로젝트·시스템 스킬 경로 | 설정 파일 하나만 복사하는 방식 배제 |
-| E03 | [user instructions](refs/codex/codex-rs/codex-home/src/instructions/mod.rs), 24행 이후 | 홈 기준 전역 지침 | 계정 변경 시 전역 지침 유지 |
-| E04 | [config fields](refs/codex/codex-rs/config/src/config_toml.rs), 176·205·277·401행 | 권한·MCP·모델 URL 설정 | 구성과 라우팅 항목의 책임 구분 |
-| E05 | [auth storage](refs/codex/codex-rs/login/src/auth/storage.rs), 154행 / [MCP OAuth](refs/codex/codex-rs/rmcp-client/src/oauth.rs), 파일 상단 | Codex와 MCP 인증 저장 경로 | 모델 계정과 도구 로그인 분리 |
-| E06 | [account processor](refs/codex/codex-rs/app-server/src/request_processors/account_processor.rs), 823행 이후 / [external bridge](refs/codex/codex-rs/app-server/src/external_auth.rs) | 외부 인증 공급과 갱신 요청 | 설정과 인증을 분리할 기술적 후보 |
-| E07 | [auth manager](refs/codex/codex-rs/login/src/auth/manager.rs), 2968행 이후 / [thread manager](refs/codex/codex-rs/core/src/thread_manager.rs), 666·1034행 | ephemeral 인증 반영과 공통 관리자 | 스레드별 독립 인증으로 오해하지 않음 |
+| E01 | [config loader](https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/config/src/loader/mod.rs), 109–121행 | 사용자 홈과 프로젝트를 포함한 설정 계층 | 계정 선택과 환경 선택 분리 |
+| E02 | [skill roots](https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/ext/skills/src/host_roots.rs), 73행 이후 | 홈·프로젝트·시스템 스킬 경로 | 설정 파일 하나만 복사하는 방식 배제 |
+| E03 | [user instructions](https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/codex-home/src/instructions/mod.rs), 24행 이후 | 홈 기준 전역 지침 | 계정 변경 시 전역 지침 유지 |
+| E04 | [config fields](https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/config/src/config_toml.rs), 176·205·277·401행 | 권한·MCP·모델 URL 설정 | 구성과 라우팅 항목의 책임 구분 |
+| E05 | [auth storage](https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/login/src/auth/storage.rs), 154행 / [MCP OAuth](https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/rmcp-client/src/oauth.rs), 파일 상단 | Codex와 MCP 인증 저장 경로 | 모델 계정과 도구 로그인 분리 |
+| E06 | [account processor](https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/app-server/src/request_processors/account_processor.rs), 823행 이후 / [external bridge](https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/app-server/src/external_auth.rs) | 외부 인증 공급과 갱신 요청 | 설정과 인증을 분리할 기술적 후보 |
+| E07 | [auth manager](https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/login/src/auth/manager.rs), 2968행 이후 / [thread manager](https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/core/src/thread_manager.rs), 666·1034행 | ephemeral 인증 반영과 공통 관리자 | 스레드별 독립 인증으로 오해하지 않음 |
 | E08 | [installed schema](config-auth-verification/schema/v2/LoginAccountParams.json), chatgptAuthTokens 분기 | 바이너리에 존재하지만 내부용·불안정 명시 | 공개 API 안정성 보장 배제 |
-| E09 | [account tests](refs/codex/codex-rs/app-server/tests/suite/v2/account.rs), 602·717·827행 / [Apps tests](refs/codex/codex-rs/app-server/tests/suite/v2/app_list.rs), 155행 | 갱신 실패·워크스페이스 제약·Apps 인증 관련 테스트가 존재 | 계정 교체 가능성과 서비스 가용성 별도 검증 |
+| E09 | [account tests](https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/app-server/tests/suite/v2/account.rs), 602·717·827행 / [Apps tests](https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/app-server/tests/suite/v2/app_list.rs), 155행 | 갱신 실패·워크스페이스 제약·Apps 인증 관련 테스트가 존재 | 계정 교체 가능성과 서비스 가용성 별도 검증 |
 
 ## 8. 다음 검증과 합격 기준
 
@@ -99,13 +99,13 @@ App Server의 `account/login/start`에는 `chatgptAuthTokens` 방식이 있다. 
 
 2026-09-13 사용자 질문에 따라 설치 CLI의 `resume --help`와 현재 클론의 시작 분기를 확인했다. 같은 프로젝트 폴더에 들어가 `codex`를 실행하는 것만으로 기존 대화를 자동 선택하지 않는다. 기본 분기는 `StartFresh`다. `codex resume`은 선택기를 열고, `codex resume --last`는 기본적으로 현재 작업 경로로 범위를 좁혀 가장 최근 기록을 선택한다. `--all`은 경로 필터를 해제하며, `codex resume <SESSION_ID>`는 특정 기록을 선택한다. 이는 현재 기록 저장소 범위에서의 선택이며 `--all`이 다른 Codex 홈을 모두 합친다는 뜻이 아니다.
 
-근거: [CLI 인자](refs/codex/codex-rs/cli/src/main.rs), 203·350행 이후 / [TUI 시작 분기](refs/codex/codex-rs/tui/src/lib.rs), 910·1488·1555행. 설치 바이너리 도움말도 선택기·`--last`·`--all` 동작을 명시한다. 현재 도구 셸에서 확인한 `codex` 래퍼 함수에는 `resume`·`--last` 문자열이 없었으며, 이것이 사용자가 여는 모든 셸의 동작까지 검증한 것은 아니다.
+근거: [CLI 인자](https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/cli/src/main.rs), 203·350행 이후 / [TUI 시작 분기](https://github.com/openai/codex/blob/6b9826e3aa83b1a5947db50f4332cb9c65f1b340/codex-rs/tui/src/lib.rs), 910·1488·1555행. 설치 바이너리 도움말도 선택기·`--last`·`--all` 동작을 명시한다. 현재 도구 셸에서 확인한 `codex` 래퍼 함수에는 `resume`·`--last` 문자열이 없었으며, 이것이 사용자가 여는 모든 셸의 동작까지 검증한 것은 아니다.
 
-Orca 공식 저장소 `https://github.com/stablyai/orca.git`를 [refs/orca](refs/orca)에 얕은 클론으로 확보했다. 기준 커밋은 `56fcb544e0574ee38c53b9e09bee693a3232fb8d`다. 설치 Orca와 동일 버전이라는 검증은 하지 않았다.
+Orca 공식 저장소 `https://github.com/stablyai/orca.git`를 [refs/orca](https://github.com/stablyai/orca/tree/56fcb544e0574ee38c53b9e09bee693a3232fb8d)에 얕은 클론으로 확보했다. 기준 커밋은 `56fcb544e0574ee38c53b9e09bee693a3232fb8d`다. 설치 Orca와 동일 버전이라는 검증은 하지 않았다.
 
 Orca 소스는 Codex 기록을 기본 홈, `codex-runtime-home/home`, `codex-accounts/<id>/home` 등에서 탐색하며, 재개 명령에 세션 ID·작업 폴더·필요한 Codex 홈을 반영한다. 따라서 Orca에서 실행한 Codex 대화가 전부 독자 포맷이라는 설명은 부정확하다. 별도 Codex 홈에 있는 원래 Codex 기록과 Orca의 UI 메타데이터를 구분해야 한다. 현재 upstream에는 시스템 기본 계정을 실제 사용자 홈으로 보내는 경로도 있으므로 Orca 기록이 모두 관리 홈에 있다고 가정하지 않는다.
 
-근거: [홈 선택](refs/orca/src/main/codex-accounts/runtime-home-service-paths.ts), 22행 이후 / [루트 중복 제거](refs/orca/src/main/ai-vault/codex-session-root-dedup.ts), 53행 이후 / [재개 명령 생성](refs/orca/src/shared/ai-vault-resume-command.ts), 15행 이후. 기존 계정 importer는 인증 가져오기이며 세션 이전이 아니다.
+근거: [홈 선택](https://github.com/stablyai/orca/blob/56fcb544e0574ee38c53b9e09bee693a3232fb8d/src/main/codex-accounts/runtime-home-service-paths.ts), 22행 이후 / [루트 중복 제거](https://github.com/stablyai/orca/blob/56fcb544e0574ee38c53b9e09bee693a3232fb8d/src/main/ai-vault/codex-session-root-dedup.ts), 53행 이후 / [재개 명령 생성](https://github.com/stablyai/orca/blob/56fcb544e0574ee38c53b9e09bee693a3232fb8d/src/shared/ai-vault-resume-command.ts), 15행 이후. 기존 계정 importer는 인증 가져오기이며 세션 이전이 아니다.
 
 설계 반영 제안:
 

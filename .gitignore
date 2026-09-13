@@ -5,6 +5,10 @@
 !/*.md
 !/*.json
 !/*.mmd
+!/licenses/
+/licenses/*
+!/licenses/codex-APACHE-2.0.txt
+!/licenses/codex-NOTICE.txt
 !/config-auth-verification/
 /config-auth-verification/*
 !/config-auth-verification/verification.json

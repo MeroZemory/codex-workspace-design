@@ -46,7 +46,7 @@ D11의 기술 근거와 남은 제약은 [Codex 설정·인증 분리 분석](20
 
 D13에 따른 설계 기준: 세션·작업 탭·계정 선택·페이스메이킹 같은 공통 로직과 운영체제별 터미널 실행·경로 처리·인증 저장·프로세스 수명주기 처리를 분리한다. 이는 macOS 후속 지원을 위한 설계 제안이며 구체적 프레임워크나 모든 플랫폼의 동시 구현을 확정한 것은 아니다.
 
-기존 [Orca 가져오기 코드](../../projects/opencodex-orca-import/src/codex/orca-import.ts)와 [인증 파서](../../projects/opencodex-orca-import/src/codex/orca-auth-source.ts)는 참고 자료다. 대화 중 확인한 구현은 refresh token을 비우고 원본 경로를 유지하는 방식이므로, 그대로 재사용하면 D04를 만족하지 않는다. [계정 저장·갱신 코드](../../projects/opencodex-orca-import/src/codex/account-store.ts)는 독립 갱신 구현을 검토할 자료다. 이 링크들은 변경될 수 있는 로컬 작업 트리를 가리킨다.
+기존 Orca 가져오기 코드 — 로컬 작업 트리 `../../projects/opencodex-orca-import/src/codex/orca-import.ts`와 인증 파서 — 로컬 작업 트리 `../../projects/opencodex-orca-import/src/codex/orca-auth-source.ts`는 참고 자료다. 대화 중 확인한 구현은 refresh token을 비우고 원본 경로를 유지하는 방식이므로, 그대로 재사용하면 D04를 만족하지 않는다. 계정 저장·갱신 코드 — 로컬 작업 트리 `../../projects/opencodex-orca-import/src/codex/account-store.ts`는 독립 갱신 구현을 검토할 자료다. 이 링크들은 변경될 수 있는 로컬 작업 트리를 가리킨다.
 
 독립 이전의 검증 기준은 원본 앱과 인증 파일을 참조하지 않고 가져온 계정의 인증 갱신까지 성공하는 것이다. 현재 실제 계정으로 이 기준을 검증한 것은 아니다. 원본 인증정보 삭제는 독립 이전의 필수 동작으로 합의하지 않았다.
 

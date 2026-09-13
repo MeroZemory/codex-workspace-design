@@ -15,9 +15,11 @@ Windows에서 수십 개 Codex CLI 세션을 운용하기 위한 개인용 앱�
 
 문서, 소스 기준 커밋 목록, 검증 결과, 분석에 직접 사용한 설치 CLI의 JSON 스키마 3개를 보존한다. 참고 저장소는 중첩 저장소나 submodule로 추가하지 않는다. 원시 probe 폴더·개인 Codex 홈·인증정보도 추가하지 않는다.
 
-문서의 `refs/`, 기존 클론 디렉터리, `probe-*`와 다른 작업 폴더를 가리키는 링크는 현재 컴퓨터에 보존된 로컬 근거다. 이 저장소만 새로 clone하면 해당 자료는 함께 내려오지 않는다. 참고 소스의 원격·커밋은 [기존 목록](repository-manifest.json)과 [후속 refs 목록](refs-manifest.json)을 따른다. 과거 probe는 기존 검증 기록이지 이 저장소만으로 재실행할 수 있는 테스트 패키지가 아니다.
+공개 소스 인용은 기준 커밋의 GitHub 링크로 제공한다. `probe-*`와 외부 작업 트리는 로컬 근거로 명시하며 이 저장소에 포함하지 않는다. 참고 소스의 원격·커밋은 [기존 목록](repository-manifest.json)과 [후속 refs 목록](refs-manifest.json)을 따른다. 과거 probe는 기존 검증 기록이지 이 저장소만으로 재실행할 수 있는 테스트 패키지가 아니다.
 
 전체 생성 스키마도 로컬에 남지만 분석에 필요한 부분만 커밋한다. 확인한 CLI 명령은 `codex app-server generate-json-schema --experimental --out <출력 폴더>`다. 재생성 시 CLI 버전을 확인한다. 버전 문자열이 같아도 과거 기록의 Git 태그와 커밋이 일치한다고 가정하지 않는다.
+
+포함된 Codex 프로토콜 스키마의 출처와 라이선스는 [서드파티 고지](THIRD_PARTY_NOTICES.md)를 참고한다. OpenAI 또는 Orca의 공식 프로젝트가 아니다.
 
 ## 다음 작업: G1 최소 실험
 
